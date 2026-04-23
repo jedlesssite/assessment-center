@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار يونغ للشخصية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .answer-btn { 
+            display: block; width: 100%; text-align: right; padding: 1rem; 
+            margin-bottom: 0.8rem; border: 2px solid #e2e8f0; border-radius: 1rem;
+            transition: all 0.2s ease; background: white; cursor: pointer;
+        }
+        .answer-btn:hover { border-color: #3b82f6; background-color: #eff6ff; transform: scale(0.99); }
+        .example-text { color: #64748b; font-size: 0.85rem; margin-top: 0.3rem; line-height: 1.4; display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-2xl mx-auto">
+         <header class="flex justify-between items-center mb-10 px-2">
+    <div class="text-right">
+        <h1 class="text-3xl font-bold text-slate-800">منصة تحليل الشخصية</h1>
+        <p class="text-slate-500 mt-2 italic">اجب بناءً على ما يمثلك فعلياً</p>
+    </div>
+    <!-- قائمة التحكم المحدثة برابط العودة -->
+    <div class="flex flex-col gap-2 items-start">
+        <a href="../index.html" class="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">🏠 القائمة الرئيسية</a>
+        <button onclick="showHistory()" class="text-sm font-bold text-blue-600 hover:underline">📊 سجل النتائج</button>
+        <button onclick="resetTest()" class="text-sm font-bold text-red-400 hover:underline">🔄 إعادة البدء</button>
+    </div>
+</header>
+
+        <div id="quiz-card" class="bg-white shadow-2xl rounded-3xl p-6 md:p-10">
+            <div id="quiz-view">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="progress-text" class="text-blue-600 font-bold"></span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full mb-8">
+                    <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+
+                <h2 id="question-text" class="text-2xl font-bold text-slate-700 mb-10 leading-snug">جاري التحميل...</h2>
+                
+                <div id="options-container"></div>
+                <div id="status-msg" class="mt-6 text-center text-blue-600 font-bold hidden">تم تسجيل الإجابة.. التالي</div>
+            </div>
+
+            <!-- واجهة السجل (تظهر عند الطلب) -->
+            <div id="history-view" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-4">النتائج السابقة</h2>
+                <div id="history-list" class="space-y-4 mb-8"></div>
+                <button onclick="closeHistory()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">العودة للاختبار</button>
+            </div>
+        </div>
+    </div>
+
+<script src="jung_questions.js"></script> 
+
+    <script>
+        let currentIndex = 0;
+let scores = { "EI": [], "SN": [], "TF": [], "JP": [] };
+
+        // 1. تحميل التقدم المحرز
+        function init() {
+            const saved = localStorage.getItem('jung_progress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentIndex = data.idx;
+                scores = data.scores;
+                if (currentIndex >= jungQuestions.length) {
+                    showResults();
+                    return;
+                }
+            }
+            render();
+        }
+
+        function render() {
+    if (typeof jungQuestions === 'undefined') {
+        document.getElementById('question-text').innerText = "خطأ في تحميل ملف الأسئلة";
+        return;
+    }
+
+   const q = jungQuestions[currentIndex];
+    document.getElementById('progress-text').innerText = `السؤال ${currentIndex + 1} من ${jungQuestions.length}`;
+    document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / jungQuestions.length) * 100}%`;
+    document.getElementById('question-text').innerText = q.q;
+    
+    const container = document.getElementById('options-container');
+    container.innerHTML = '';
+
+    q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.innerHTML = `
+            <div class="font-bold text-slate-800 text-base md:text-lg">${opt.text}</div>
+            <div class="example-text">💡 ${opt.example}</div>
+        `;
+        btn.onclick = () => {
+                  scores[q.trait].push(opt.score); 
+            currentIndex++;
+            
+            localStorage.setItem('jung_progress', JSON.stringify({idx: currentIndex, scores: scores}));
+            
+            document.getElementById('status-msg').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('status-msg').classList.add('hidden');
+                if(currentIndex < jungQuestions.length) {
+                    render();
+                } else {
+                    showResults();
+                }
+            }, 400);
+        };
+        container.appendChild(btn);
+    });
+}
+
+       function showResults() {
+    let finalResults = {};
+    let personalityType = "";
+    let html = `<div class="text-center py-5">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800">نمط شخصيتك النهائي هو:</h2>`;
+    
+    const traits = ["EI", "SN", "TF", "JP"];
+
+    traits.forEach(t => {
+        // حساب النسبة بناءً على تكرار الحرف الأول في كل محور
+        let firstLetter = t[0]; // E, S, T, or J
+        let countFirst = scores[t].filter(ans => ans === firstLetter).length;
+        let percentage = Math.round((countFirst / 15) * 100);
+        
+        finalResults[t] = percentage;
+        
+        // بناء النمط الرباعي
+        if (t === "EI") personalityType += (percentage >= 50 ? "E" : "I");
+        if (t === "SN") personalityType += (percentage >= 50 ? "S" : "N");
+        if (t === "TF") personalityType += (percentage >= 50 ? "T" : "F");
+        if (t === "JP") personalityType += (percentage >= 50 ? "J" : "P");
+    });
+
+    // عرض النمط بشكل كبير
+    html += `<div class="text-5xl font-black text-blue-600 mb-8 tracking-widest">${personalityType}</div>
+             <div class="space-y-6 text-right">`;
+
+    traits.forEach(t => {
+        let p = finalResults[t];
+        html += `
+            <div>
+                <div class="flex justify-between mb-1 font-bold text-sm text-slate-600">
+                    <span>${translate(t)}</span>
+                    <span>${p}%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                    <div class="bg-blue-600 h-full transition-all duration-1000" style="width: ${p}%"></div>
+                </div>
+            </div>`;
+    });
+
+    saveHistoryEntry({ type: personalityType, details: finalResults });
+
+    html += `</div>
+        <div class="flex flex-col gap-4 mt-10">
+            <button onclick="copyResults('${personalityType}')" class="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl font-bold border-2 border-blue-200">📋 نسخ النمط</button>
+            <button onclick="resetTest()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">🔄 إعادة الاختبار</button>
+        </div>
+    </div>`;
+    
+    document.getElementById('quiz-card').innerHTML = html;
+
+        }
+
+       // 1. دالة حفظ السجل المحدثة ليونغ
+function saveHistoryEntry(res) {
+    let history = JSON.parse(localStorage.getItem('jung_history') || '[]');
+    history.unshift({ 
+        date: new Date().toLocaleString('ar-EG'), 
+        type: res.type, 
+        details: res.details 
+    });
+    localStorage.setItem('jung_history', JSON.stringify(history.slice(0, 10)));
+}
+
+       // 2. دالة عرض السجل المحدثة
+function showHistory() {
+    document.getElementById('quiz-view').classList.add('hidden');
+    document.getElementById('history-view').classList.remove('hidden');
+    const history = JSON.parse(localStorage.getItem('jung_history') || '[]');
+    const list = document.getElementById('history-list');
+    
+    list.innerHTML = history.length ? history.map(item => `
+        <div class="p-4 border rounded-2xl bg-slate-50 mb-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-lg font-black text-blue-600">${item.type}</span>
+                <span class="text-xs font-bold text-slate-400">${item.date}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-600">
+                <div>E/I: ${item.details.EI}%</div>
+                <div>S/N: ${item.details.SN}%</div>
+                <div>T/F: ${item.details.TF}%</div>
+                <div>J/P: ${item.details.JP}%</div>
+            </div>
+        </div>
+    `).join('') : "<p class='text-center text-slate-400'>لا توجد نتائج مسجلة.</p>";
+}
+
+        function closeHistory() {
+            document.getElementById('history-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+        }
+
+        // 3. دالة نسخ النتائج المحدثة
+function copyResults(type) {
+    const textToCopy = `نمط شخصيتي في اختبار يونغ هو: ${type}\nتم التحليل عبر منصة مركز الاختبارات الشامل.`;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("تم نسخ نمط الشخصية بنجاح!");
+    });
+}
+        
+
+       // 4. دالة إعادة الاختبار
+function resetTest() {
+    if(confirm("هل تريد إعادة اختبار يونغ من البداية؟")) {
+        localStorage.removeItem('jung_progress');
+        location.reload();
+    }
+}
+
+function translate(t) {
+    const labels = { "EI": "الانبساط (E) vs الانطواء (I)", "SN": "الحس (S) vs الحدس (N)", "TF": "التفكير (T) vs الشعور (F)", "JP": "الحزم (J) vs المرونة (P)" };
+    return labels[t] || t;
+}
+        window.onload = init;
+
+    </script>
+</body>
+</html>

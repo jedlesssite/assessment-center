@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الاختبارات الشاملة</title>
+    <script src="https://tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .category-card { 
+            background: white; padding: 2rem; border-radius: 2rem; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease; border: 1px solid #e2e8f0;
+        }
+        .category-card:hover { transform: translateY(-5px); border-color: #3b82f6; }
+        .test-link {
+            display: block; padding: 1rem; margin-top: 0.5rem;
+            background: #f8fcfb; border-radius: 1rem; font-weight: bold;
+            color: #475569; transition: all 0.2s;
+        }
+        .test-link:hover { background: #eff6ff; color: #3b82f6; padding-right: 1.5rem; }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+    <div class="max-w-5xl mx-auto">
+        <header class="text-center mb-16">
+            <h1 class="text-4xl font-bold text-slate-800">مركز التقييم والتحليل</h1>
+            <p class="text-slate-500 mt-4 italic text-lg">بوابتك لفهم ذاتك وتوجيه مسارك المهني</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- سكشن اختبارات الشخصية -->
+            <div class="category-card">
+                <h2 class="text-2xl font-bold text-blue-600 mb-6 border-b pb-4">🧠 اختبارات الشخصية</h2>
+                <div class="space-y-3">
+                    <a href="personality_tests/bigfive.html" class="test-link">📋 اختبار الخمسة الكبرى</a>
+                    <a href="personality_tests/jung.html" class="test-link">🎭 اختبار يونغ (MBTI)</a>
+                    <a href="personality_tests/enneagram.html" class="test-link">♾️ اختبار الإنيغرام</a>
+                </div>
+            </div>
+
+           <!-- سكشن التوجيه المهني المحدث في index.html -->
+<div class="category-card">
+    <h2 class="text-2xl font-bold text-indigo-600 mb-6 border-b pb-4">💼 التوجيه المهني</h2>
+    <div class="space-y-3">
+        <a href="career_tests/aptitude.html" class="test-link">⚡ اختبار الكفاءة (Aptitude)</a>
+        <a href="career_tests/vocational.html" class="test-link">🛠️ الاختبار المهني (الميول)</a>
+        <a href="career_tests/satisfaction.html" class="test-link">😊 اختبار الرضا الوظيفي</a>
+        
+        <!-- تفعيل رابط اختبار أدوار الفريق -->
+        <a href="career_tests/team_roles.html" class="test-link">👥 اختبار أدوار الفريق</a>
+    </div>
+</div>
+
+           <!-- سكشن التدريب على التقييم المحدث في index.html -->
+<div class="category-card md:col-span-2">
+    <h2 class="text-2xl font-bold text-emerald-600 mb-6 border-b pb-4">📈 تدريب التقييم (Assessment Training)</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- رابط التفكير العددي -->
+        <a href="aptitude_training/numerical.html" class="test-link">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">🔢</span>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700">اختبار التفكير العددي</span>
+                        <span class="text-[9px] text-slate-400 font-medium">الرسوم البيانية والتحليل المالي</span>
+                    </div>
+                </div>
+                <span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-1 rounded font-bold">40 سؤال</span>
+            </div>
+        </a>
+
+        <!-- رابط التفكير اللفظي - تم تفعيله الآن -->
+        <a href="aptitude_training/verbal.html" class="test-link border-r-2 border-emerald-500">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">✍️</span>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700">اختبار التفكير اللفظي</span>
+                        <span class="text-[9px] text-slate-400 font-medium">الاستنتاج المنطقي وفهم النصوص</span>
+                    </div>
+                </div>
+                <span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-1 rounded font-bold">40 سؤال</span>
+            </div>
+        </a>
+
+    </div>
+    <!-- قسم مركز النتائج الموحد -->
+<div class="category-card md:col-span-2 border-t-4 border-t-amber-400 bg-amber-50/30">
+    <div class="flex justify-between items-center mb-6 border-b border-amber-200 pb-4">
+        <h2 class="text-2xl font-black text-amber-600">🏆 مركز النتائج والتحليلات</h2>
+       <button onclick="copyAllResults()" style="
+    background-color: #4338ca !important; 
+    color: white !important; 
+    padding: 10px 20px !important; 
+    font-size: 12px !important; 
+    font-weight: 800 !important; 
+    border-radius: 4px !important; 
+    border: none !important; 
+    cursor: pointer !important; 
+    display: inline-flex !important; 
+    align-items: center !important; 
+    gap: 8px !important; 
+    box-shadow: 0 4px 6px -1px rgba(67, 56, 202, 0.3) !important;
+    transition: transform 0.2s ease !important;
+    margin: 15px 0 !important;
+    outline: none !important;
+">
+    <span style="font-size: 16px;">📋</span>
+    <span>نسخ التقرير الكامل لنتائجك</span>
+</button>
+    </div>
+
+    <div id="global-results-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- سيتم ملء النتائج هنا برمجياً -->
+        <p class="text-slate-400 italic text-sm col-span-full text-center py-10">لم يتم إجراء أي اختبارات بعد.. ابدأ رحلتك الآن!</p>
+    </div>
+</div>
+</div>
+<script>
+    // خريطة أسماء الاختبارات
+    const testMap = {
+        'bigfive': 'الخمسة الكبرى',
+        'jung_history': 'نمط الشخصية (MBTI)',
+        'enneagram_history': 'اختبار الإنيغرام',
+        'aptitude_history': 'الكفاءة المهنية',
+        'vocational_history': 'الميول المهنية',
+        'satisfaction_history': 'الرضا الوظيفي',
+        'team_history': 'أدوار الفريق',
+        'numerical_history': 'التفكير العددي',
+        'verbal_history': 'التفكير اللفظي'
+    };
+
+    // دالة جلب النتيجة مع دعم تعدد المسميات
+      function getVal(key) {
+    try {
+        // 1. تحديد المفتاح الصحيح
+        const searchKey = (key === 'bigfive') ? 'bigfive_history' : key;
+        const raw = localStorage.getItem(searchKey);
+        if (!raw) return null;
+
+        const data = JSON.parse(raw);
+        // 2. جلب أحدث نتيجة (دائماً العنصر الأول في المصفوفة)
+        const last = Array.isArray(data) ? data[0] : data;
+
+        // 3. إذا وجدنا نصاً جاهزاً في خانة result نعرضه فوراً
+        // هذا سيغطي (الخمسة الكبرى، يونغ، الإنيغرام)
+        if (last.result) return last.result;
+        
+        // 4. إذا كان اختباراً رقمياً (نسبة مئوية)
+        if (last.percent !== undefined) return last.percent + "%";
+        
+        // 5. خيارات احتياطية للمسميات الأخرى
+        return last.res || last.type || "مكتمل ✓";
+    } catch (e) {
+        return null;
+    }
+}
+
+
+
+
+   function loadGlobalResults() {
+    const container = document.getElementById('global-results-container');
+    if (!container) return;
+
+    // ضبط الحاوية الأم لتكون ملمومة وتحت العنوان مباشرة
+    container.style.maxWidth = "500px"; // حصر العرض لتقريب المسافات
+    container.style.marginTop = "20px"; // مسافة معقولة تحت العنوان
+    container.style.marginRight = "0";  // محاذاة لليمين مع العنوان
+
+    const sections = [
+        { title: "🧠 اختبارات الشخصية", keys: ['bigfive', 'jung_history', 'enneagram_history'] },
+        { title: "💼 التوجيه المهني", keys: ['aptitude_history', 'vocational_history', 'satisfaction_history', 'team_history'] },
+        { title: "📈 القدرات الذهنية", keys: ['numerical_history', 'verbal_history'] }
+    ];
+
+    let hasData = false;
+    let finalHtml = '';
+
+    sections.forEach(sec => {
+        let itemsHtml = '';
+        sec.keys.forEach(k => {
+            const value = getVal(k);
+            if (value) {
+                hasData = true;
+                itemsHtml += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f8fafc;">
+                        <!-- اسم الاختبار -->
+                        <span style="font-size: 12px; font-weight: 600; color: #64748b; margin-left: 15px;">${testMap[k]}</span>
+                        
+                        <!-- النتيجة (صندوق ملموم) -->
+                        <span style="background-color: #eef2ff; color: #4338ca; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 900; border: 1px solid #c7d2fe; min-width: 90px; text-align: center; white-space: nowrap;">
+                            ${value}
+                        </span>
+                    </div>`;
+            }
+        });
+
+        if (itemsHtml) {
+            finalHtml += `
+                <div style="background: white; padding: 20px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <!-- عنوان القسم الجانبي -->
+                    <h3 style="font-size: 13px; font-weight: 900; color: #1e293b; margin-bottom: 12px; border-right: 4px solid #4338ca; padding-right: 10px; text-align: right;">
+                        ${sec.title}
+                    </h3>
+                    <div style="display: flex; flex-direction: column;">
+                        ${itemsHtml}
+                    </div>
+                </div>`;
+        }
+    });
+
+    if (hasData) {
+        container.innerHTML = finalHtml;
+        // إلغاء أي كلاسات CSS قديمة قد تؤثر على العرض (مثل grid)
+        container.className = "flex flex-col gap-2"; 
+    } else {
+        container.innerHTML = '<p style="text-align:right; color:#94a3b8; font-style:italic; padding:20px;">لا توجد نتائج مسجلة حتى الآن.</p>';
+    }
+}
+
+
+    // إصلاح دالة النسخ لتعمل على الجوال والكمبيوتر
+    function copyAllResults() {
+        let text = "📋 تقرير النتائج الشامل - مركز التقييم والتحليل\n";
+        text += "==================================\n\n";
+        let found = false;
+
+        Object.keys(testMap).forEach(key => {
+            const val = getVal(key);
+            if (val) {
+                text += `• ${testMap[key]}: ${val}\n`;
+                found = true;
+            }
+        });
+
+        if (!found) { return alert("لا توجد نتائج لنسخها!"); }
+
+        const dummy = document.createElement("textarea");
+        document.body.appendChild(dummy);
+        dummy.value = text;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+        alert("✅ تم نسخ التقرير بنجاح!");
+    }
+
+   window.addEventListener('load', loadGlobalResults);
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> اختبار الرضا الوظيفي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .answer-btn { 
+            display: block; width: 100%; text-align: right; padding: 1rem; 
+            margin-bottom: 0.8rem; border: 2px solid #e2e8f0; border-radius: 1rem;
+            transition: all 0.2s ease; background: white; cursor: pointer;
+        }
+        .answer-btn:hover { border-color: #3b82f6; background-color: #eff6ff; transform: scale(0.99); }
+        .example-text { color: #64748b; font-size: 0.85rem; margin-top: 0.3rem; line-height: 1.4; display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-2xl mx-auto">
+        <header class="flex justify-between items-center mb-10 px-2">
+    <div class="text-right">
+        <h1 class="text-3xl font-bold text-slate-800">اختبار الرضا الوظيفي</h1>
+        <p class="text-slate-500 mt-2 italic">اجب بناءً على ما يمثلك فعلياً</p>
+    </div>
+    <!-- قائمة التحكم المحدثة برابط العودة -->
+    <div class="flex flex-col gap-2 items-start">
+       <a href="../index.html" class="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">🏠 القائمة الرئيسية</a>
+        <button onclick="showHistory()" class="text-sm font-bold text-blue-600 hover:underline">📊 سجل النتائج</button>
+        <button onclick="resetTest()" class="text-sm font-bold text-red-400 hover:underline">🔄 إعادة البدء</button>
+    </div>
+</header>
+
+        <div id="quiz-card" class="bg-white shadow-2xl rounded-3xl p-6 md:p-10">
+            <div id="quiz-view">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="progress-text" class="text-blue-600 font-bold"></span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full mb-8">
+                    <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+
+                <h2 id="question-text" class="text-2xl font-bold text-slate-700 mb-10 leading-snug">جاري التحميل...</h2>
+                
+                <div id="options-container"></div>
+                <div id="status-msg" class="mt-6 text-center text-blue-600 font-bold hidden">تم تسجيل الإجابة.. التالي</div>
+            </div>
+
+            <!-- واجهة السجل (تظهر عند الطلب) -->
+            <div id="history-view" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-4">النتائج السابقة</h2>
+                <div id="history-list" class="space-y-4 mb-8"></div>
+                <button onclick="closeHistory()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">العودة للاختبار</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="satisfaction_questions.js"></script>
+
+    <script>
+       let currentIndex = 0;
+let satisfactionScore = 0; // سنخزن فيها التصنيفات المختارة
+
+       function init() {
+    const saved = localStorage.getItem('satisfaction_progress');
+    if (saved) {
+        const data = JSON.parse(saved);
+        currentIndex = data.idx;
+        satisfactionScores = data.scores || []; // تأكد من استعادة المصفوفة
+        if (currentIndex >= satisfactionQuestions.length) {
+            showResults();
+            return;
+        }
+    }
+    render();
+}
+
+        function render() {
+            if (typeof satisfactionQuestions === 'undefined') return;
+            const q = satisfactionQuestions[currentIndex];
+            
+            document.getElementById('progress-text').innerText = `السؤال ${currentIndex + 1} من ${satisfactionQuestions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / satisfactionQuestions.length) * 100}%`;
+            document.getElementById('question-text').innerText = q.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.innerHTML = `
+                    <div class="font-bold text-slate-800">${opt.text}</div>
+                    <div class="example-text">✨ ${opt.example ? opt.example : "اضغط للاختيار"}</div>
+                `;
+                btn.onclick = () => {
+    satisfactionScore += opt.score; // جمع الرقم (1-4)
+    currentIndex++;
+    
+    localStorage.setItem('satisfaction_save', JSON.stringify({
+        idx: currentIndex, 
+        score: satisfactionScore 
+    }));
+
+    if(currentIndex < satisfactionQuestions.length) {
+        render();
+    } else {
+        showResults();
+    }
+};
+                container.appendChild(btn);
+            });
+        }
+
+    function showResults() {
+    // 1. الحسابات
+    const maxPossibleScore = satisfactionQuestions.length * 4;
+    let percentage = Math.round((satisfactionScore / maxPossibleScore) * 100);
+    
+    let status = "";
+    let colorClass = ""; // هذا المتغير سيتحكم في لون النسبة والحالة
+
+    // 2. تحديد الحالة واللون بناءً على النسبة
+    if (percentage >= 80) { 
+        status = "راضٍ جداً"; 
+        colorClass = "text-emerald-600"; // أخضر للممتاز
+    } else if (percentage >= 60) { 
+        status = "راضٍ بشكل جيد"; 
+        colorClass = "text-blue-600"; // أزرق للجيد
+    } else if (percentage >= 40) { 
+        status = "رضا منخفض"; 
+        colorClass = "text-amber-500"; // برتقالي للتحذير
+    } else { 
+        status = "غير راضٍ إطلاقاً"; 
+        colorClass = "text-red-600"; // أحمر للسيء
+    }
+
+    // 3. حفظ النتيجة برمجياً
+    saveSatisfactionHistory(percentage, status);
+
+    // 4. بناء واجهة النتائج
+    let html = `
+        <div class="text-center py-5">
+            <h2 class="text-xl font-bold mb-4 text-slate-500">نتيجة تحليل الرضا الوظيفي:</h2>
+            
+            <!-- النسبة المئوية والحالة بألوان متغيرة -->
+            <div class="text-7xl font-black mb-2 ${colorClass}">${percentage}%</div>
+            <div class="text-2xl font-bold ${colorClass} mb-10">${status}</div>
+            
+            <div class="flex flex-col gap-4">
+                <button onclick="copySatisfactionResult(${percentage}, '${status}')" class="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl font-bold border-2 border-blue-200 hover:bg-blue-100 transition-all">
+                    📋 نسخ النتيجة لمشاركتها
+                </button>
+                
+                <!-- هذا الزر تم إصلاح ربطه بالدالة -->
+                <button onclick="showHistory()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-lg transition-all">
+                    📊 عرض سجل نتائجك السابقة
+                </button>
+
+                <button onclick="resetTest()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all">
+                    🔄 إعادة الاختبار من البداية
+                </button>
+                
+                <a href="../index.html" class="w-full py-4 text-blue-600 font-bold underline text-center">🏠 القائمة الرئيسية</a>
+            </div>
+        </div>`;
+    
+    document.getElementById('quiz-card').innerHTML = html;
+}
+
+
+// دالة نسخ النتيجة (أضفها أيضاً)
+function copySatisfactionResult(percent, statusText) {
+    const text = `نسبة رضاي الوظيفي هي: ${percent}% (${statusText}). تم التحليل عبر منصة مركز الاختبارات.`;
+    navigator.clipboard.writeText(text).then(() => alert("تم نسخ النتيجة بنجاح!"));
+}
+
+
+        function resetTest() {
+            if(confirm("إعادة البدء؟")) {
+                localStorage.removeItem('satisfaction_progress');
+                location.reload();
+            }
+        }
+       // 1. دالة حفظ النتيجة في الذاكرة
+function saveSatisfactionHistory(percent, statusText) {
+    let history = JSON.parse(localStorage.getItem('satisfaction_history') || '[]');
+    history.unshift({ 
+        date: new Date().toLocaleString('ar-EG'), 
+        percent: percent,
+        status: statusText
+    });
+    localStorage.setItem('satisfaction_history', JSON.stringify(history.slice(0, 10)));
+}
+
+// 2. دالة عرض سجل النتائج
+function showHistory() {
+    // 1. الحصول على البيانات من الذاكرة
+    const history = JSON.parse(localStorage.getItem('satisfaction_history') || '[]');
+    
+    // 2. بناء الهيكل الجديد للسجل
+    let listHTML = `
+        <div class="text-right">
+            <h2 class="text-2xl font-bold mb-6 border-b pb-2 text-slate-800 italic">سجل نتائجك السابقة:</h2>
+            <div class="space-y-4">`;
+
+    listHTML += history.length ? history.map(item => {
+        // تحديد لون النقطة الجانبية بناءً على النسبة
+        let dotColor = item.percent >= 80 ? 'bg-emerald-500' : (item.percent >= 60 ? 'bg-blue-500' : 'bg-red-500');
+        
+        return `
+            <div class="p-4 border rounded-2xl bg-slate-50 flex justify-between items-center shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full ${dotColor} animate-pulse"></div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-bold">${item.date}</div>
+                        <div class="font-bold text-slate-700">${item.status}</div>
+                    </div>
+                </div>
+                <div class="text-2xl font-black text-slate-800">${item.percent}%</div>
+            </div>`;
+    }).join('') : "<p class='text-center text-slate-400 py-10'>لا يوجد سجل نتائج بعد.</p>";
+
+    listHTML += `
+            </div>
+            <!-- زر العودة يغلق السجل عن طريق إعادة تحميل الصفحة للحالة الأصلية -->
+            <button onclick="location.reload()" class="w-full mt-8 py-4 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-900 transition-all">
+                ↩ العودة للاختبار
+            </button>
+        </div>`;
+    
+    // 3. تحديث الكارد بالكامل
+    document.getElementById('quiz-card').innerHTML = listHTML;
+}
+
+// 3. دالة إغلاق السجل
+function closeHistory() {
+    document.getElementById('history-view').classList.add('hidden');
+    document.getElementById('quiz-view').classList.remove('hidden');
+}
+
+
+
+function copyAptitudeResults(percent, score) {
+    const text = `أحرزت درجة ${percent}% (${score} إجابة صحيحة) في اختبار الكفاءة المهنية.\nتم التحليل عبر منصة مركز الاختبارات.`;
+    navigator.clipboard.writeText(text).then(() => alert("تم نسخ نتيجتك!"));
+}
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>

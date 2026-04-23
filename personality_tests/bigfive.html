@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة تحليل الشخصية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .answer-btn { 
+            display: block; width: 100%; text-align: right; padding: 1rem; 
+            margin-bottom: 0.8rem; border: 2px solid #e2e8f0; border-radius: 1rem;
+            transition: all 0.2s ease; background: white; cursor: pointer;
+        }
+        .answer-btn:hover { border-color: #3b82f6; background-color: #eff6ff; transform: scale(0.99); }
+        .example-text { color: #64748b; font-size: 0.85rem; margin-top: 0.3rem; line-height: 1.4; display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-2xl mx-auto">
+       <header class="flex justify-between items-center mb-10 px-2">
+    <div class="text-right">
+        <h1 class="text-3xl font-bold text-slate-800">منصة تحليل الشخصية</h1>
+        <p class="text-slate-500 mt-2 italic">اجب بناءً على ما يمثلك فعلياً</p>
+    </div>
+    <!-- قائمة التحكم المحدثة برابط العودة -->
+    <div class="flex flex-col gap-2 items-start">
+        <a href="../index.html" class="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">🏠 القائمة الرئيسية</a>
+        <button onclick="showHistory()" class="text-sm font-bold text-blue-600 hover:underline">📊 سجل النتائج</button>
+        <button onclick="resetTest()" class="text-sm font-bold text-red-400 hover:underline">🔄 إعادة البدء</button>
+    </div>
+</header>
+
+        <div id="quiz-card" class="bg-white shadow-2xl rounded-3xl p-6 md:p-10">
+            <div id="quiz-view">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="progress-text" class="text-blue-600 font-bold"></span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full mb-8">
+                    <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+
+                <h2 id="question-text" class="text-2xl font-bold text-slate-700 mb-10 leading-snug">جاري التحميل...</h2>
+                
+                <div id="options-container"></div>
+                <div id="status-msg" class="mt-6 text-center text-blue-600 font-bold hidden">تم تسجيل الإجابة.. التالي</div>
+            </div>
+
+            <!-- واجهة السجل (تظهر عند الطلب) -->
+            <div id="history-view" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-4">النتائج السابقة</h2>
+                <div id="history-list" class="space-y-4 mb-8"></div>
+                <button onclick="closeHistory()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">العودة للاختبار</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="questions.js"></script>
+    <script>
+        let currentIndex = 0;
+        let scores = { "Openness": 0, "Conscientiousness": 0, "Extraversion": 0, "Agreeableness": 0, "Neuroticism": 0 };
+
+        // 1. تحميل التقدم المحرز
+        function init() {
+            const saved = localStorage.getItem('big5_progress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentIndex = data.idx;
+                scores = data.scores;
+                if (currentIndex >= bigFiveQuestions.length) {
+                    showResults();
+                    return;
+                }
+            }
+            render();
+        }
+
+        function render() {
+            if (typeof bigFiveQuestions === 'undefined') {
+                document.getElementById('question-text').innerText = "خطأ في تحميل ملف الأسئلة";
+                return;
+            }
+
+            const q = bigFiveQuestions[currentIndex];
+            document.getElementById('progress-text').innerText = `السؤال ${currentIndex + 1} من ${bigFiveQuestions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / bigFiveQuestions.length) * 100}%`;
+            document.getElementById('question-text').innerText = q.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.innerHTML = `
+                    <div class="font-bold text-slate-800 text-base md:text-lg">${opt.text}</div>
+                    <div class="example-text">💡 ${opt.example}</div>
+                `;
+                btn.onclick = () => {
+                    scores[q.trait] += (opt.score || 0);
+                    currentIndex++;
+                    
+                    // حفظ التقدم في كل سؤال
+                   localStorage.setItem('bigfive_history', JSON.stringify([{ date: new Date().toLocaleString(), result: "مكتمل" }]));
+                    
+                    document.getElementById('status-msg').classList.remove('hidden');
+                    setTimeout(() => {
+                        document.getElementById('status-msg').classList.add('hidden');
+                        if(currentIndex < bigFiveQuestions.length) {
+                            render();
+                        } else {
+                            showResults();
+                        }
+                    }, 400);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function showResults() {
+            let finalResults = {};
+            let html = `<div class="text-center py-5"><h2 class="text-2xl font-bold mb-8 text-slate-800">نتائج تحليل شخصيتك</h2><div class="space-y-6 text-right">`;
+            
+            for (let t in scores) {
+                let percentage = Math.round((scores[t] / (24 * 5)) * 100); // 24 سؤال لكل سمة
+                finalResults[t] = percentage;
+                html += `
+                    <div>
+                        <div class="flex justify-between mb-1 font-bold">
+                            <span>${translate(t)}</span>
+                            <span class="text-blue-600">${percentage}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                            <div class="bg-blue-600 h-full" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>`;
+            }
+
+            // حفظ النتيجة في السجل
+            saveHistoryEntry(finalResults);
+
+            html += `</div>
+                <div class="flex flex-col gap-4 mt-10">
+                    <button onclick="copyResults()" class="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl font-bold border-2 border-blue-200">📋 نسخ النتائج لمشاركتها</button>
+                    <button onclick="resetTest()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">🔄 إعادة الاختبار</button>
+                </div>
+            </div>`;
+            document.getElementById('quiz-card').innerHTML = html;
+        }
+       function saveHistoryEntry(finalResults) {
+    // 1. خريطة السمات (تدعم الأحرف الكبيرة والصغيرة لضمان عدم ظهور undefined)
+    const traitsMap = {
+    'Openness': 'الانفتاح',
+    'Conscientiousness': 'الانضباط',
+    'Extraversion': 'الانبساط',
+    'Agreeableness': 'التعاون',
+    'Neuroticism': 'الحساسية الانفعالية'
+};
+    
+    // 2. الحصول على المفتاح صاحب أعلى نسبة
+    let maxKey = Object.keys(finalResults).reduce((a, b) => finalResults[a] > finalResults[b] ? a : b);
+    
+    // 3. جلب الاسم من الخريطة، وإذا لم يوجد نستخدم المفتاح نفسه كخيار أخير
+    let traitName = traitsMap[maxKey] || maxKey;
+    
+    let topTraitText = "الأعلى: " + traitName + " (" + finalResults[maxKey] + "%)";
+
+    // 4. الحفظ في السجل الموحد
+    let history = JSON.parse(localStorage.getItem('bigfive_history') || '[]');
+    history.unshift({
+        date: new Date().toLocaleString('ar-EG'),
+        result: topTraitText, // هذا النص سيظهر في القائمة الرئيسية
+        scores: finalResults
+    });
+    
+    localStorage.setItem('bigfive_history', JSON.stringify(history.slice(0, 5)));
+}
+
+        function showHistory() {
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('history-view').classList.remove('hidden');
+            const history = JSON.parse(localStorage.getItem('big5_history') || '[]');
+            const list = document.getElementById('history-list');
+            list.innerHTML = history.length ? history.map(item => `
+                <div class="p-4 border rounded-2xl bg-slate-50">
+                    <div class="text-xs font-bold text-slate-400 mb-2">${item.date}</div>
+                    <div class="grid grid-cols-2 gap-2 text-[11px] font-bold">
+                        ${Object.entries(item.data).map(([k, v]) => `<div>${translate(k)}: ${v}%</div>`).join('')}
+                    </div>
+                </div>
+            `).join('') : "<p class='text-center text-slate-400'>لا توجد نتائج مسجلة.</p>";
+        }
+
+        function closeHistory() {
+            document.getElementById('history-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+        }
+
+        function copyResults() {
+            const history = JSON.parse(localStorage.getItem('big5_history') || '[]');
+            if(!history.length) return;
+            let text = "نتائج اختبار الشخصية الخاص بي:\n";
+            Object.entries(history[0].data).forEach(([k, v]) => text += `${translate(k)}: ${v}%\n`);
+            navigator.clipboard.writeText(text);
+            alert("تم نسخ النتائج بنجاح!");
+        }
+
+        function resetTest() {
+            if(confirm("سيتم حذف تقدمك الحالي والبدء من جديد، هل أنت متأكد؟")) {
+                localStorage.removeItem('big5_progress');
+                location.reload();
+            }
+        }
+
+        function translate(t) { return {"Openness":"الانفتاح", "Conscientiousness":"الضمير", "Extraversion":"الانبساط", "Agreeableness":"الوفاق", "Neuroticism":"العصابية"}[t] || t; }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

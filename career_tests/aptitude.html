@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الكفاءة المهنية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .answer-btn { 
+            display: block; width: 100%; text-align: right; padding: 1rem; 
+            margin-bottom: 0.8rem; border: 2px solid #e2e8f0; border-radius: 1rem;
+            transition: all 0.2s ease; background: white; cursor: pointer;
+        }
+        .answer-btn:hover { border-color: #3b82f6; background-color: #eff6ff; transform: scale(0.99); }
+        .example-text { color: #64748b; font-size: 0.85rem; margin-top: 0.3rem; line-height: 1.4; display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-2xl mx-auto">
+        <header class="flex justify-between items-center mb-10 px-2">
+    <div class="text-right">
+        <h1 class="text-3xl font-bold text-slate-800">اختبار الكفاءة المهنية</h1>
+        <p class="text-slate-500 mt-2 italic">اختر الجواب الصحيح</p>
+    </div>
+    <!-- قائمة التحكم المحدثة برابط العودة -->
+    <div class="flex flex-col gap-2 items-start">
+        <a href="../index.html" class="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">🏠 القائمة الرئيسية</a>
+        <button onclick="showHistory()" class="text-sm font-bold text-blue-600 hover:underline">📊 سجل النتائج</button>
+        <button onclick="resetTest()" class="text-sm font-bold text-red-400 hover:underline">🔄 إعادة البدء</button>
+    </div>
+</header>
+
+        <div id="quiz-card" class="bg-white shadow-2xl rounded-3xl p-6 md:p-10">
+            <div id="quiz-view">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="progress-text" class="text-blue-600 font-bold"></span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full mb-8">
+                    <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+
+                <h2 id="question-text" class="text-2xl font-bold text-slate-700 mb-10 leading-snug">جاري التحميل...</h2>
+                
+                <div id="options-container"></div>
+                <div id="status-msg" class="mt-6 text-center text-blue-600 font-bold hidden">تم تسجيل الإجابة.. التالي</div>
+            </div>
+
+            <!-- واجهة السجل (تظهر عند الطلب) -->
+            <div id="history-view" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-4">النتائج السابقة</h2>
+                <div id="history-list" class="space-y-4 mb-8"></div>
+                <button onclick="closeHistory()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">العودة للاختبار</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="aptitude_questions.js"></script>
+
+    <script>
+         let currentIndex = 0;
+        let totalScore = 0; // لحساب الدرجات الصحيحة
+
+        function init() {
+            const saved = localStorage.getItem('aptitude_progress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentIndex = data.idx;
+                totalScore = data.score;
+                if (currentIndex >= aptitudeQuestions.length) {
+                    showResults();
+                    return;
+                }
+            }
+            render();
+        }
+
+        function render() {
+            if (typeof aptitudeQuestions === 'undefined') return;
+            const q = aptitudeQuestions[currentIndex];
+            
+            document.getElementById('progress-text').innerText = `السؤال ${currentIndex + 1} من ${aptitudeQuestions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / aptitudeQuestions.length) * 100}%`;
+            document.getElementById('question-text').innerText = q.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.innerHTML = `
+                    <div class="font-bold text-slate-800">${opt.text}</div>
+                    <div class="example-text">✨ ${opt.example ? opt.example : "اضغط للاختيار"}</div>
+                `;
+                btn.onclick = () => {
+                    totalScore += (opt.score || 0); // إضافة 1 للصح و 0 للخطأ
+                    currentIndex++;
+                    localStorage.setItem('aptitude_progress', JSON.stringify({idx: currentIndex, score: totalScore}));
+                    
+                    if(currentIndex < aptitudeQuestions.length) {
+                        render();
+                        window.scrollTo(0, 0);
+                    } else {
+                        showResults();
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+       function showResults() {
+    // التأكد من أن عدد الأسئلة ليس صفراً لتجنب خطأ القسمة
+    const totalQuestions = aptitudeQuestions.length;
+    
+    if (totalQuestions === 0) {
+        document.getElementById('quiz-card').innerHTML = "خطأ في تحميل البيانات.";
+        return;
+    }
+
+    // حساب النسبة
+    let percentage = Math.round((totalScore / totalQuestions) * 100);
+    
+    // واجهة العرض
+    let html = `
+        <div class="text-center py-5">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">نتيجة اختبار الكفاءة</h2>
+            <div class="text-6xl font-black text-blue-600 mb-4">${percentage}%</div>
+            <p class="text-slate-500 mb-8">لقد أجبت بشكل صحيح على ${totalScore} من أصل ${totalQuestions} سؤال.</p>
+            
+            <div class="flex flex-col gap-4">
+                <button onclick="copyAptitudeResults(${percentage}, ${totalScore})" class="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl font-bold border-2 border-blue-200">📋 نسخ النتيجة</button>
+                <button onclick="resetTest()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">🔄 إعادة الاختبار</button>
+                <a href="../index.html" class="w-full py-4 text-blue-600 font-bold underline text-center">🏠 القائمة الرئيسية</a>
+            </div>
+        </div>`;
+    
+    // حفظ السجل
+    saveAptitudeHistory(percentage, totalScore);
+    
+    document.getElementById('quiz-card').innerHTML = html;
+        }
+
+        function resetTest() {
+            if(confirm("إعادة البدء؟")) {
+                localStorage.removeItem('aptitude_progress');
+                location.reload();
+            }
+        }
+        // دالة حفظ السجل المخصصة للكفاءة
+function saveAptitudeHistory(percent, score) {
+    let history = JSON.parse(localStorage.getItem('aptitude_history') || '[]');
+    history.unshift({ 
+        date: new Date().toLocaleString('ar-EG'), 
+        percent: percent,
+        score: score
+    });
+    localStorage.setItem('aptitude_history', JSON.stringify(history.slice(0, 10)));
+}
+
+// دالة عرض السجل (تأكد من وجود زر يفتحها في الهيدر)
+function showHistory() {
+    document.getElementById('quiz-view').classList.add('hidden');
+    // إنشاء واجهة سجل مؤقتة إذا لم تكن موجودة
+    if(!document.getElementById('history-view')) {
+        let hDiv = document.createElement('div');
+        hDiv.id = 'history-view';
+        document.getElementById('quiz-card').appendChild(hDiv);
+    }
+    const historyView = document.getElementById('history-view');
+    historyView.classList.remove('hidden');
+    
+    const history = JSON.parse(localStorage.getItem('aptitude_history') || '[]');
+    let listHTML = `<h2 class="text-xl font-bold mb-4 border-b pb-2">سجل درجات الكفاءة</h2><div class="space-y-3">`;
+    
+    listHTML += history.length ? history.map(item => `
+        <div class="p-3 border rounded-xl bg-slate-50 flex justify-between items-center">
+            <div>
+                <div class="text-[10px] text-slate-400">${item.date}</div>
+                <div class="font-bold text-blue-600">الدرجة: ${item.score}</div>
+            </div>
+            <div class="text-xl font-black">${item.percent}%</div>
+        </div>
+    `).join('') : "<p class='text-center text-slate-400 py-5'>لا توجد نتائج مسجلة.</p>";
+    
+    listHTML += `</div><button onclick="closeHistory()" class="w-full mt-6 py-3 bg-slate-800 text-white rounded-xl font-bold">إغلاق</button>`;
+    historyView.innerHTML = listHTML;
+}
+
+function closeHistory() {
+    document.getElementById('history-view').classList.add('hidden');
+    document.getElementById('quiz-view').classList.remove('hidden');
+}
+
+function copyAptitudeResults(percent, score) {
+    const text = `أحرزت درجة ${percent}% (${score} إجابة صحيحة) في اختبار الكفاءة المهنية.\nتم التحليل عبر منصة مركز الاختبارات.`;
+    navigator.clipboard.writeText(text).then(() => alert("تم نسخ نتيجتك!"));
+}
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تدريب التفكير اللفظي</title>
+    <script src="https://tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; overflow-x: hidden; }
+        .app-card { width: 100%; max-width: 500px; margin: 0 auto; }
+        
+        .ui-btn {
+            border-radius: 4px !important; border: 1px solid #e2e8f0; background: white;
+            padding: 8px 14px; font-size: 11px; font-weight: 700; color: #64748b;
+            transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .ui-btn:hover { border-color: #3b82f6; color: #3b82f6; transform: translateY(-2px); }
+
+        /* منطقة النص القرائي */
+        .passage-box {
+            width: 100%; background: #ffffff; border-radius: 4px;
+            margin-bottom: 1.5rem; border-right: 4px solid #3b82f6;
+            padding: 20px; min-height: 150px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .answer-btn { 
+            display: block; width: 100%; text-align: center; padding: 1.1rem; 
+            margin-bottom: 0.7rem; border: 2px solid #e2e8f0; border-radius: 4px;
+            transition: all 0.2s ease; background: white; cursor: pointer;
+            font-weight: 700; color: #334155; font-size: 0.95rem;
+        }
+        .answer-btn:hover:not(:disabled) { border-color: #3b82f6; background-color: #eff6ff; }
+        .correct { border-color: #10b981 !important; background-color: #ecfdf5 !important; color: #065f46 !important; }
+        .wrong { border-color: #ef4444 !important; background-color: #fef2f2 !important; color: #991b1b !important; }
+
+        .action-btn {
+            background: #2563eb; color: white; width: 100%; padding: 14px;
+            border-radius: 4px; font-weight: 900; font-size: 0.9rem;
+            box-shadow: 0 4px 0px #1e40af; border: none; transition: all 0.2s;
+        }
+        .action-btn:hover { background: #1d4ed8; transform: translateY(2px); box-shadow: 0 2px 0px #1e40af; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="app-card">
+        <div class="flex justify-end items-center mb-8 gap-2">
+            <button onclick="location.href='../index.html'" class="ui-btn">🏠 الرئيسية</button>
+            <button onclick="showHistory()" class="ui-btn">📊 السجل</button>
+            <button onclick="resetTest()" class="ui-btn" style="color: #f87171;">🔄 إعادة</button>
+        </div>
+
+        <header class="text-center mb-8">
+            <h1 class="text-xl font-black text-slate-800 tracking-tight">التفكير اللفظي</h1>
+            <p class="text-slate-400 text-[10px] mt-1 uppercase tracking-[0.2em] font-bold italic">Verbal Reasoning</p>
+        </header>
+
+        <div id="quiz-card" class="bg-white shadow-xl rounded-lg p-6 md:p-10 border border-slate-200">
+            <div id="quiz-view">
+                <div class="flex justify-between items-center mb-2">
+                    <span id="progress-text" class="text-blue-600 font-black text-[11px] uppercase">جاري التحميل...</span>
+                    <span class="text-slate-300 text-[10px] font-bold">VERBAL</span>
+                </div>
+                <div style="width: 100%; background-color: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 2rem;">
+                    <div id="progress-bar" style="width: 0%; height: 100%; background-color: #2563eb; transition: width 0.6s;"></div>
+                </div>
+
+                <!-- مساحة النص القرائي -->
+                <div class="passage-box">
+                    <p id="passage-text" class="text-sm leading-relaxed text-slate-600 text-justify"></p>
+                </div>
+
+                <h2 id="question-text" class="text-base font-bold text-slate-800 mb-8 text-center bg-slate-50 p-3 rounded"></h2>
+                <div id="options-container" class="grid grid-cols-1 gap-2"></div>
+
+                <div id="explanation-box" class="mt-8 p-6 bg-slate-50 border-t-2 border-blue-500 rounded-b-lg hidden">
+                    <p id="explanation-text" class="text-slate-600 text-xs leading-relaxed mb-6 text-center font-medium"></p>
+                    <button onclick="nextQuestion()" class="action-btn">استمرار ➜</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="verbal_questions.js"></script>
+    <script>
+        let currentIndex = 0;
+        let score = 0;
+
+        function render() {
+            if (typeof verbalQuestions === 'undefined') return;
+            const q = verbalQuestions[currentIndex];
+            const total = verbalQuestions.length;
+            
+            document.getElementById('progress-text').innerText = `المسألة ${currentIndex + 1} من ${total}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / total) * 100}%`;
+            
+            document.getElementById('passage-text').innerText = q.passage;
+            document.getElementById('question-text').innerText = q.q;
+            document.getElementById('explanation-box').classList.add('hidden');
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.innerText = opt.text;
+                btn.onclick = () => handleCheck(index, q.correctIndex);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleCheck(selectedIndex, correctIndex) {
+            const btns = document.querySelectorAll('.answer-btn');
+            btns.forEach(btn => btn.disabled = true);
+            if (selectedIndex === correctIndex) { btns[selectedIndex].classList.add('correct'); score++; }
+            else { btns[selectedIndex].classList.add('wrong'); btns[correctIndex].classList.add('correct'); }
+            document.getElementById('explanation-text').innerText = verbalQuestions[currentIndex].explanation;
+            document.getElementById('explanation-box').classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < verbalQuestions.length) render(); else showResults();
+        }
+
+        function showResults() {
+            const p = Math.round((score / verbalQuestions.length) * 100);
+            saveVerbalHistory(score, verbalQuestions.length, p);
+            document.getElementById('quiz-card').innerHTML = `
+                <div class="text-center py-10">
+                    <div class="text-7xl font-black text-blue-600 mb-8 italic">${p}%</div>
+                    <button onclick="location.reload()" class="action-btn">إعادة التدريب</button>
+                </div>`;
+        }
+
+        function saveVerbalHistory(c, t, p) {
+            let h = JSON.parse(localStorage.getItem('verbal_history') || '[]');
+            h.unshift({ date: new Date().toLocaleString('ar-EG'), res: `${c}/${t}`, percent: p });
+            localStorage.setItem('verbal_history', JSON.stringify(h.slice(0, 10)));
+        }
+
+        function showHistory() {
+            const h = JSON.parse(localStorage.getItem('verbal_history') || '[]');
+            let html = `<div class="text-right"><h2 class="text-xl font-black mb-6 border-b-2 pb-2 italic text-center">سجل الأداء اللفظي:</h2>`;
+            html += h.length ? h.map(i => `<div class="p-4 border border-slate-100 rounded-[4px] bg-slate-50 flex justify-between items-center mb-2">
+                <div><div class="text-[9px] text-slate-400">${i.date}</div><div class="text-[11px] font-black">${i.res}</div></div>
+                <div class="text-xl font-black text-blue-500">${i.percent}%</div></div>`).join('') : "<p class='text-center py-10'>لا يوجد سجل.</p>";
+            html += `<button onclick="location.reload()" class="action-btn mt-8">↩ العودة</button></div>`;
+            document.getElementById('quiz-card').innerHTML = html;
+        }
+
+        function resetTest() { if(confirm("إعادة؟")) location.reload(); }
+        window.onload = render;
+    </script>
+</body>
+</html>

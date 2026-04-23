@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الأدوار في الفريق</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .answer-btn { 
+            display: block; width: 100%; text-align: right; padding: 1rem; 
+            margin-bottom: 0.8rem; border: 2px solid #e2e8f0; border-radius: 1rem;
+            transition: all 0.2s ease; background: white; cursor: pointer;
+        }
+        .answer-btn:hover { border-color: #3b82f6; background-color: #eff6ff; transform: scale(0.99); }
+        .example-text { color: #64748b; font-size: 0.85rem; margin-top: 0.3rem; line-height: 1.4; display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-2xl mx-auto">
+        <header class="flex justify-between items-center mb-10 px-2">
+    <div class="text-right">
+        <h1 class="text-3xl font-bold text-slate-800">اختبار الأدوار في الفريق</h1>
+        <p class="text-slate-500 mt-2 italic">اجب بنعم او لا</p>
+    </div>
+    <!-- قائمة التحكم المحدثة برابط العودة -->
+    <div class="flex flex-col gap-2 items-start">
+       <a href="../index.html" class="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">🏠 القائمة الرئيسية</a>
+        <button onclick="showHistory()" class="text-sm font-bold text-blue-600 hover:underline">📊 سجل النتائج</button>
+        <button onclick="resetTest()" class="text-sm font-bold text-red-400 hover:underline">🔄 إعادة البدء</button>
+    </div>
+</header>
+
+        <div id="quiz-card" class="bg-white shadow-2xl rounded-3xl p-6 md:p-10">
+            <div id="quiz-view">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="progress-text" class="text-blue-600 font-bold"></span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full mb-8">
+                    <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+
+                <h2 id="question-text" class="text-2xl font-bold text-slate-700 mb-10 leading-snug">جاري التحميل...</h2>
+                
+                <div id="options-container"></div>
+                <div id="status-msg" class="mt-6 text-center text-blue-600 font-bold hidden">تم تسجيل الإجابة.. التالي</div>
+            </div>
+
+            <!-- واجهة السجل (تظهر عند الطلب) -->
+            <div id="history-view" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-4">النتائج السابقة</h2>
+                <div id="history-list" class="space-y-4 mb-8"></div>
+                <button onclick="closeHistory()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">العودة للاختبار</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="team_roles_questions.js"></script>
+
+    <script>
+       // 1. تعريف المتغيرات الأساسية (تأكد أنها let وليست const)
+     let currentIndex = 0;
+    let roleScores = {
+        "Plant": 0, "Resource": 0, "Coord": 0, "Shaper": 0, 
+        "Monitor": 0, "Teamworker": 0, "Implementer": 0, "Completer": 0, "Specialist": 0
+    };
+
+    function init() {
+        const saved = localStorage.getItem('team_roles_save');
+        if (saved) {
+            const data = JSON.parse(saved);
+            currentIndex = data.idx;
+            roleScores = data.scores || roleScores; 
+            if (typeof teamQuestions !== 'undefined' && currentIndex >= teamQuestions.length) {
+                showResults();
+                return;
+            }
+        }
+        render();
+    }
+
+    function render() {
+        if (typeof teamQuestions === 'undefined') return;
+        const q = teamQuestions[currentIndex];
+        document.getElementById('progress-text').innerText = `السؤال ${currentIndex + 1} من ${teamQuestions.length}`;
+        document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / teamQuestions.length) * 100}%`;
+        document.getElementById('question-text').innerText = q.q;
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'answer-btn';
+            btn.innerHTML = `<span>${opt.text}</span>`;
+            btn.onclick = () => {
+                if(opt.isYes) roleScores[q.role]++;
+                currentIndex++;
+                localStorage.setItem('team_roles_save', JSON.stringify({idx: currentIndex, scores: roleScores}));
+                if(currentIndex < teamQuestions.length) render(); else showResults();
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function showResults() {
+        let maxScore = -1;
+        let winningRoleKey = "";
+        for (let key in roleScores) {
+            if (roleScores[key] > maxScore) {
+                maxScore = roleScores[key];
+                winningRoleKey = key;
+            }
+        }
+
+        const roleData = {
+            "Plant": { name: "المبتكر (Plant)", desc: "أنت مصدر الأفكار المبدعة والحلول غير التقليدية." },
+            "Resource": { name: "مستكشف الموارد", desc: "أنت الشخص الاجتماعي الذي يجلب الفرص والاتصالات." },
+            "Coord": { name: "المنسق (Co-ordinator)", desc: "أنت القائد الذي يوضح الأهداف ويفوض المهام." },
+            "Shaper": { name: "المحفز (Shaper)", desc: "أنت الشخص الذي يتحدى العقبات ويضغط للإنجاز." },
+            "Monitor": { name: "المراقب المحلل", desc: "أنت الشخص العقلاني الذي يحلل الخيارات بدقة." },
+            "Teamworker": { name: "المتعاون (Teamworker)", desc: "أنت روح الفريق، تهتم بالانسجام وتقليل التوتر." },
+            "Implementer": { name: "المنفذ (Implementer)", desc: "أنت العملي الذي يحول الأفكار إلى خطط واقعية." },
+            "Completer": { name: "المتمم (Completer)", desc: "أنت المدقق الذي يضمن خروج العمل بجودة مثالية." },
+            "Specialist": { name: "المتخصص (Specialist)", desc: "أنت الخبير الذي يقدم المعرفة التقنية العميقة." }
+        };
+
+        const result = roleData[winningRoleKey];
+        saveTeamHistory(result.name);
+
+        document.getElementById('quiz-card').innerHTML = `
+            <div class="text-center py-5 text-right">
+                <h2 class="text-xl font-bold mb-4 text-slate-500 text-center">دورك الأنسب في الفريق هو:</h2>
+                <div class="text-4xl font-black text-indigo-600 mb-6 text-center">${result.name}</div>
+                <div class="bg-indigo-50 p-6 rounded-2xl mb-8 border border-indigo-100">
+                    <p class="text-slate-700 leading-relaxed font-bold">💡 عن هذا الدور: ${result.desc}</p>
+                </div>
+                <div class="flex flex-col gap-3">
+                    <button onclick="showHistory()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg">📊 عرض سجل نتائجك السابقة</button>
+                    <button onclick="copyTeamResult('${result.name}')" class="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl font-bold border-2 border-blue-100">📋 نسخ النتيجة</button>
+                    <button onclick="resetTest()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">🔄 إعادة الاختبار</button>
+                    <a href="../index.html" class="w-full py-4 text-blue-600 font-bold underline text-center">🏠 القائمة الرئيسية</a>
+                </div>
+            </div>`;
+    }
+
+    // --- نظام السجل المطور ---
+    function saveTeamHistory(roleName) {
+        let history = JSON.parse(localStorage.getItem('team_history') || '[]');
+        history.unshift({ date: new Date().toLocaleString('ar-EG'), res: roleName });
+        localStorage.setItem('team_history', JSON.stringify(history.slice(0, 5)));
+    }
+
+    function showHistory() {
+        const history = JSON.parse(localStorage.getItem('team_history') || '[]');
+        let listHTML = `
+            <div class="text-right">
+                <h2 class="text-2xl font-bold mb-6 border-b pb-2 text-slate-800 italic">سجل أدوارك السابقة:</h2>
+                <div class="space-y-4">`;
+
+        listHTML += history.length ? history.map(item => `
+            <div class="p-4 border rounded-2xl bg-slate-50 flex justify-between items-center shadow-sm">
+                <div>
+                    <div class="text-[10px] text-slate-400 font-bold">${item.date}</div>
+                    <div class="font-bold text-indigo-600">${item.res}</div>
+                </div>
+                <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+            </div>
+        `).join('') : "<p class='text-center text-slate-400 py-10'>لا يوجد سجل نتائج بعد.</p>";
+
+        listHTML += `
+                </div>
+                <button onclick="location.reload()" class="w-full mt-8 py-4 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-900 transition-all">↩ العودة</button>
+            </div>`;
+        document.getElementById('quiz-card').innerHTML = listHTML;
+    }
+
+    function resetTest() {
+        if(confirm("هل تريد حقاً إعادة اختبار أدوار الفريق؟")) {
+            localStorage.removeItem('team_roles_save');
+            location.reload();
+        }
+    }
+
+    function copyTeamResult(roleName) {
+        navigator.clipboard.writeText("دوري في الفريق هو: " + roleName);
+        alert("تم نسخ الدور بنجاح!");
+    }
+
+    window.onload = init;
+    </script>
+</body>
+</html>

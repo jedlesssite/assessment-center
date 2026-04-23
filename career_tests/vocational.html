@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> نظرة ثاقبة على شخصيتك المهنية.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .answer-btn { 
+            display: block; width: 100%; text-align: right; padding: 1rem; 
+            margin-bottom: 0.8rem; border: 2px solid #e2e8f0; border-radius: 1rem;
+            transition: all 0.2s ease; background: white; cursor: pointer;
+        }
+        .answer-btn:hover { border-color: #3b82f6; background-color: #eff6ff; transform: scale(0.99); }
+        .example-text { color: #64748b; font-size: 0.85rem; margin-top: 0.3rem; line-height: 1.4; display: block; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-2xl mx-auto">
+        <header class="flex justify-between items-center mb-10 px-2">
+    <div class="text-right">
+        <h1 class="text-3xl font-bold text-slate-800">ماهي شخصيتك المهنية ؟  </h1>
+        <p class="text-slate-500 mt-2 italic">اجب بناءً على ما يمثلك فعلياً</p>
+    </div>
+    <!-- قائمة التحكم المحدثة برابط العودة -->
+    <div class="flex flex-col gap-2 items-start">
+       <a href="../index.html" class="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">🏠 القائمة الرئيسية</a>
+        <button onclick="showHistory()" class="text-sm font-bold text-blue-600 hover:underline">📊 سجل النتائج</button>
+        <button onclick="resetTest()" class="text-sm font-bold text-red-400 hover:underline">🔄 إعادة البدء</button>
+    </div>
+</header>
+
+        <div id="quiz-card" class="bg-white shadow-2xl rounded-3xl p-6 md:p-10">
+            <div id="quiz-view">
+                <div class="flex justify-between items-center mb-4">
+                    <span id="progress-text" class="text-blue-600 font-bold"></span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full mb-8">
+                    <div id="progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                </div>
+
+                <h2 id="question-text" class="text-2xl font-bold text-slate-700 mb-10 leading-snug">جاري التحميل...</h2>
+                
+                <div id="options-container"></div>
+                <div id="status-msg" class="mt-6 text-center text-blue-600 font-bold hidden">تم تسجيل الإجابة.. التالي</div>
+            </div>
+
+            <!-- واجهة السجل (تظهر عند الطلب) -->
+            <div id="history-view" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-4">النتائج السابقة</h2>
+                <div id="history-list" class="space-y-4 mb-8"></div>
+                <button onclick="closeHistory()" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">العودة للاختبار</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="vocational_questions.js"></script>
+
+    <script>
+        let currentIndex = 0;
+let vocationalScores = []; // سنخزن فيها التصنيفات المختارة
+
+       function init() {
+    const saved = localStorage.getItem('vocational_progress');
+    if (saved) {
+        const data = JSON.parse(saved);
+        currentIndex = data.idx;
+        vocationalScores = data.scores || []; // تأكد من استعادة المصفوفة
+        if (currentIndex >= vocationalQuestions.length) {
+            showResults();
+            return;
+        }
+    }
+    render();
+}
+
+        function render() {
+            if (typeof vocationalQuestions === 'undefined') return;
+            const q = vocationalQuestions[currentIndex];
+            
+            document.getElementById('progress-text').innerText = `السؤال ${currentIndex + 1} من ${vocationalQuestions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / vocationalQuestions.length) * 100}%`;
+            document.getElementById('question-text').innerText = q.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.innerHTML = `
+                    <div class="font-bold text-slate-800">${opt.text}</div>
+                    <div class="example-text">✨ ${opt.example ? opt.example : "اضغط للاختيار"}</div>
+                `;
+                btn.onclick = () => {
+    vocationalScores.push(opt.score); // تخزين الكلمة مثل "Technical"
+    currentIndex++;
+    localStorage.setItem('vocational_progress', JSON.stringify({idx: currentIndex, scores: vocationalScores}));
+                    
+                    if(currentIndex < vocationalQuestions.length) {
+                        render();
+                        window.scrollTo(0, 0);
+                    } else {
+                        showResults();
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+      function showResults() {
+    // 1. حساب التصنيف الأكثر تكراراً
+    const counts = {};
+    let maxCount = 0;
+    let winningTrait = "";
+
+    vocationalScores.forEach(trait => {
+        counts[trait] = (counts[trait] || 0) + 1;
+        if (counts[trait] > maxCount) {
+            maxCount = counts[trait];
+            winningTrait = trait;
+        }
+    });
+
+    const careerMap = {
+        "Technical": { name: "النمط التقني/الميداني", job: "المهندسين، الفنيين، الحرفيين، المبرمجين" },
+        "Creative": { name: "النمط الإبداعي", job: "المصممين، الكتاب، الفنانين، المبتكرين" },
+        "Scientific": { name: "النمط العلمي/التحليلي", job: "الباحثين، الأطباء، المحللين، مطوري البيانات" },
+        "Social": { name: "النمط الاجتماعي", job: "المعلمين، الأخصائيين، مديري الموارد البشرية" },
+        "Persuasive": { name: "النمط القيادي/الإقناعي", job: "رجال الأعمال، المحامين، مديري المبيعات" },
+        "Administrative": { name: "النمط الإداري/التنظيمي", job: "المحاسبين، السكرتارية، مديري المكاتب" }
+    };
+
+    const result = careerMap[winningTrait] || { name: "متوازن الميول", job: "وظائف تجمع بين التخطيط والتنفيذ" };
+
+    // 2. استدعاء دالة الحفظ فوراً قبل عرض النتائج
+    saveVocationalHistory(result.name);
+
+    // 3. تجهيز واجهة العرض
+    let html = `
+        <div class="text-center py-5">
+            <h2 class="text-2xl font-bold mb-2 text-slate-500">ميلك المهني الأساسي هو:</h2>
+            <div class="text-4xl font-black text-indigo-600 mb-6">${result.name}</div>
+            
+            <div class="bg-indigo-50 p-6 rounded-2xl mb-8 text-right">
+                <p class="text-slate-700 font-bold mb-2">الوظائف المقترحة لك:</p>
+                <p class="text-indigo-600 text-sm leading-relaxed">${result.job}</p>
+            </div>
+            
+            <div class="flex flex-col gap-4">
+                <button onclick="copyVocationalResult('${result.name}')" class="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl font-bold border-2 border-blue-200">📋 نسخ النتيجة</button>
+                <button onclick="resetTest()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold">🔄 إعادة الاختبار</button>
+                <a href="../index.html" class="w-full py-4 text-blue-600 font-bold underline text-center">🏠 القائمة الرئيسية</a>
+            </div>
+        </div>`;
+    
+    document.getElementById('quiz-card').innerHTML = html;
+}
+
+// دالة نسخ النتيجة (أضفها أيضاً)
+function copyVocationalResult(trait) {
+    const text = `ميلي المهني الأساسي هو: ${trait}. تم التحليل عبر منصة مركز الاختبارات.`;
+    navigator.clipboard.writeText(text).then(() => alert("تم نسخ النتيجة بنجاح!"));
+}
+
+
+        function resetTest() {
+            if(confirm("إعادة البدء؟")) {
+                localStorage.removeItem('vocational_progress');
+                location.reload();
+            }
+        }
+        // دالة حفظ السجل المخصصة للكفاءة
+function saveVocationalHistory(traitName) {
+    let history = JSON.parse(localStorage.getItem('vocational_history') || '[]');
+    history.unshift({ date: new Date().toLocaleString('ar-EG'), res: traitName });
+    localStorage.setItem('vocational_history', JSON.stringify(history.slice(0, 10)));
+}
+
+// دالة عرض السجل (تأكد من وجود زر يفتحها في الهيدر)
+function showHistory() {
+    // إخفاء واجهة الأسئلة وإظهار واجهة السجل
+    document.getElementById('quiz-view').classList.add('hidden');
+    
+    // التكتيك لضمان وجود حاوية للسجل
+    let historyView = document.getElementById('history-view');
+    if (!historyView) {
+        historyView = document.createElement('div');
+        historyView.id = 'history-view';
+        document.getElementById('quiz-card').appendChild(historyView);
+    }
+    historyView.classList.remove('hidden');
+
+    const history = JSON.parse(localStorage.getItem('vocational_history') || '[]');
+    let listHTML = `<h2 class="text-xl font-bold mb-6 border-b pb-2 text-slate-800">سجل الميول المهنية</h2><div class="space-y-3">`;
+
+    listHTML += history.length ? history.map(item => `
+        <div class="p-4 border rounded-2xl bg-slate-50 flex justify-between items-center">
+            <div>
+                <div class="text-[10px] text-slate-400 font-bold mb-1">${item.date}</div>
+                <div class="font-bold text-indigo-600">${item.res}</div>
+            </div>
+            <div class="text-xs bg-white px-2 py-1 rounded-lg border border-slate-100 font-bold text-slate-500">تم الحفظ</div>
+        </div>
+    `).join('') : "<p class='text-center text-slate-400 py-10'>لا يوجد سجل نتائج بعد.</p>";
+
+    listHTML += `</div><button onclick="closeHistory()" class="w-full mt-8 py-3 bg-slate-800 text-white rounded-xl font-bold">إغلاق السجل</button>`;
+    historyView.innerHTML = listHTML;
+}
+
+function closeHistory() {
+    document.getElementById('history-view').classList.add('hidden');
+    document.getElementById('quiz-view').classList.remove('hidden');
+}
+
+
+function copyAptitudeResults(percent, score) {
+    const text = `أحرزت درجة ${percent}% (${score} إجابة صحيحة) في اختبار الكفاءة المهنية.\nتم التحليل عبر منصة مركز الاختبارات.`;
+    navigator.clipboard.writeText(text).then(() => alert("تم نسخ نتيجتك!"));
+}
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
