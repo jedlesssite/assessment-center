@@ -67,7 +67,7 @@ let satisfactionScore = 0; // سنخزن فيها التصنيفات المخت�
     if (saved) {
         const data = JSON.parse(saved);
         currentIndex = data.idx;
-        satisfactionScores = data.scores || []; // تأكد من استعادة المصفوفة
+        satisfactionScore = data.score || 0; // استعادة مجموع الدرجات المحفوظ
         if (currentIndex >= satisfactionQuestions.length) {
             showResults();
             return;
@@ -98,7 +98,7 @@ let satisfactionScore = 0; // سنخزن فيها التصنيفات المخت�
     satisfactionScore += opt.score; // جمع الرقم (1-4)
     currentIndex++;
     
-    localStorage.setItem('satisfaction_save', JSON.stringify({
+    localStorage.setItem('satisfaction_progress', JSON.stringify({
         idx: currentIndex, 
         score: satisfactionScore 
     }));
